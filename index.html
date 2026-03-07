@@ -45,7 +45,24 @@
         }
         .phone-wrapper.visible { opacity: 1; }
 
-        /* --- CSS CHO PHÁO HOA --- */
+        /* --- STICKER MÈO --- */
+        .cat-sticker {
+            position: absolute;
+            bottom: 10%;
+            width: 25%; /* Kích thước vừa phải cho mobile */
+            z-index: 15;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .cat-left { left: 5%; }
+        .cat-right { right: 5%; }
+
+        /* Đồng bộ hiệu ứng hiện ra với bó hoa */
+        .phone-wrapper.visible .cat-sticker {
+            animation: fadeInBouquet 5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        /* --- CANVAS PHÁO HOA TRONG SUỐT --- */
         #fireworksCanvas {
             position: absolute;
             top: 0; left: 0;
@@ -57,7 +74,7 @@
         .special-text-container {
             position: absolute; top: 12%; width: 100%;
             display: flex; flex-direction: column; align-items: center; gap: 5px;
-            z-index: 10;
+            z-index: 30;
         }
         .wavy-line span {
             display: inline-block; color: var(--primary-blue);
@@ -70,7 +87,7 @@
         .bouquet-container {
             position: relative;
             width: 85%; display: flex; justify-content: center; align-items: center;
-            margin-top: 100px;
+            margin-top: 100px; z-index: 10;
         }
         .flower-bouquet {
             width: 100%; height: auto; opacity: 0;
@@ -78,30 +95,19 @@
         .phone-wrapper.visible .flower-bouquet {
             animation: fadeInBouquet 5s cubic-bezier(0.4, 0, 0.2, 1) forwards, bounce 2.5s infinite ease-in-out 2s;
         }
-
-        /* --- SỬA LOGIC TẠI ĐÂY --- */
         .envelope-icon {
-            position: absolute; width: 70px; height: 70px; cursor: pointer; z-index: 15;
+            position: absolute; width: 70px; height: 70px; cursor: pointer; z-index: 25;
             filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.3)); opacity: 0;
-            /* Mặc định chặn click */
-            pointer-events: none;
         }
-
         .phone-wrapper.visible .envelope-icon {
-            /* enableClick chạy sau 5s (bằng thời gian bó hoa hoàn thành) */
-            animation:
-                envelopePop 4s cubic-bezier(0.1, 1.56, 0.64, 1) 3s forwards,
-                pulse 3s infinite ease-in-out 5.3s,
-                enableClick 0.1s forwards 5s;
+            animation: envelopePop 4s cubic-bezier(0.1, 1.56, 0.64, 1) 3s forwards, pulse 3s infinite ease-in-out 5.3s, enableClick 0.1s forwards 5s;
         }
 
-        @keyframes enableClick {
-            to { pointer-events: auto; }
-        }
+        @keyframes enableClick { to { pointer-events: auto; } }
 
         .modal-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(0px);
+            background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(6px);
             display: none; justify-content: center; align-items: center;
             z-index: 100; opacity: 0; transition: opacity 0.8s ease, backdrop-filter 0.8s ease;
         }
@@ -121,6 +127,7 @@
         }
         .modal-overlay.active .note-line.show { opacity: 1; transform: translateY(0); }
 
+        /* --- Animations --- */
         @keyframes fadeInBouquet { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         @keyframes envelopePop { from { opacity: 0; transform: scale(0) rotate(-20deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
@@ -155,6 +162,13 @@
             </svg>
         </div>
 
+        <div class="cat-sticker cat-left">
+            <div class="tenor-gif-embed" data-postid="15997130965381315116" data-share-method="host" data-aspect-ratio="0.746606" data-width="100%"></div>
+        </div>
+        <div class="cat-sticker cat-right">
+            <div class="tenor-gif-embed" data-postid="15997130965381315116" data-share-method="host" data-aspect-ratio="0.746606" data-width="100%"></div>
+        </div>
+
         <div class="modal-overlay" id="modalOverlay">
             <div class="old-note" id="noteCard">
                 <p class="note-line">Chúc mừng ngày 8/3 emmm nhé !!!</p>
@@ -167,6 +181,8 @@
             </div>
         </div>
     </div>
+
+    <script type="text/javascript" async src="https://tenor.com/embed.js"></script>
 
     <script>
         const overlay = document.getElementById("start-overlay");
@@ -182,6 +198,7 @@
             applyWavyEffect("line1");
             applyWavyEffect("line2", 0.2);
             resizeCanvas();
+            startFestivalFireworks();
         };
 
         function applyWavyEffect(elementId, startDelay = 0) {
@@ -202,8 +219,7 @@
 
         envelope.onclick = () => {
             modal.style.display = "flex";
-            createFirework();
-
+            createExplosion(canvas.width / 2, canvas.height / 3, 100);
             setTimeout(() => {
                 modal.classList.add("active");
                 lines.forEach((line, index) => {
@@ -222,7 +238,7 @@
             }
         };
 
-        /* --- FIREWORKS ENGINE --- */
+        /* --- FIREWORKS AMBIENT ENGINE --- */
         let particles = [];
         function resizeCanvas() {
             canvas.width = mainContent.offsetWidth;
@@ -234,46 +250,54 @@
             constructor(x, y, color) {
                 this.x = x; this.y = y; this.color = color;
                 this.velocity = {
-                    x: (Math.random() - 0.5) * 8,
-                    y: (Math.random() - 0.5) * 8
+                    x: (Math.random() - 0.5) * (Math.random() * 10 + 4),
+                    y: (Math.random() - 0.5) * (Math.random() * 10 + 4)
                 };
                 this.alpha = 1;
                 this.friction = 0.95;
+                this.gravity = 0.07;
+                this.size = Math.random() * 2 + 1.5;
             }
             draw() {
+                ctx.save();
                 ctx.globalAlpha = this.alpha;
                 ctx.beginPath();
-                ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
                 ctx.fillStyle = this.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
                 ctx.fill();
+                ctx.restore();
             }
             update() {
                 this.velocity.x *= this.friction;
                 this.velocity.y *= this.friction;
+                this.velocity.y += this.gravity;
                 this.x += this.velocity.x;
                 this.y += this.velocity.y;
                 this.alpha -= 0.01;
             }
         }
 
-        function createFirework() {
-            const colors = ["#00bfff", "#FFD700", "#FFFFFF", "#FF69B4"];
-            for (let i = 0; i < 3; i++) {
-                setTimeout(() => {
-                    const x = Math.random() * canvas.width;
-                    const y = Math.random() * (canvas.height / 2);
-                    const color = colors[Math.floor(Math.random() * colors.length)];
-                    for (let j = 0; j < 50; j++) {
-                        particles.push(new Particle(x, y, color));
-                    }
-                }, i * 500);
+        function createExplosion(x, y, count = 50) {
+            const colors = ["#00bfff", "#FFD700", "#FFFFFF", "#FF00FF", "#00FF00", "#FF4500"];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle(x, y, color));
             }
-            animateFireworks();
         }
 
-        function animateFireworks() {
-            if (particles.length === 0) return;
-            requestAnimationFrame(animateFireworks);
+        function startFestivalFireworks() {
+            setInterval(() => {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * (canvas.height * 0.7);
+                createExplosion(x, y, 40);
+            }, 600);
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             particles.forEach((p, i) => {
                 if (p.alpha <= 0) particles.splice(i, 1);
